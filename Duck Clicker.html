@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duck Clicker Game</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #6a11cb, #2575fc);
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 {
+            color: #f1f1f1;
+            margin-top: 50px;
+            font-size: 3em;
+        }
+        .duck {
+            width: 250px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-top: 50px;
+        }
+        .duck:active {
+            transform: scale(0.95);
+        }
+        .score {
+            font-size: 2.5em;
+            margin-top: 30px;
+        }
+        .level {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+        .button {
+            padding: 12px 24px;
+            font-size: 1.3em;
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        .button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        .button:disabled {
+            background-color: #b5b5b5;
+            cursor: not-allowed;
+        }
+        .upgrades, .auto-clickers, .achievements {
+            margin-top: 30px;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f4f4f4;
+            border-radius: 20px;
+            height: 20px;
+            margin-top: 30px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+        }
+        .progress {
+            height: 100%;
+            background-color: #76c7c0;
+            border-radius: 20px;
+        }
+        .achievement {
+            font-size: 1.5em;
+            color: #f39c12;
+            margin-top: 20px;
+        }
+        .prestige {
+            font-size: 1.3em;
+            color: #9b59b6;
+            margin-top: 30px;
+        }
+        .notification {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #28a745;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1.2em;
+            display: none;
+            z-index: 10;
+            width: 80%;
+            max-width: 400px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .notification.visible {
+            display: block;
+            opacity: 1;
+        }
+        .small-duck {
+            position: absolute;
+            width: 50px;
+            animation: floatDuck 1s ease-out forwards, disappear 2s forwards;
+        }
+        @keyframes floatDuck {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-100px);
+            }
+        }
+        @keyframes disappear {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Duck Clicker Game</h1>
+    <img src="https://media1.tenor.com/m/WO5R4deXQUwAAAAd/cutie-pie.gif" alt="Duck" class="duck" id="duck">
+    <div class="score">
+        <p>Score: <span id="score">0</span></p>
+        <p>Level: <span id="level">1</span></p>
+    </div>
+    <div class="progress-bar">
+        <div class="progress" id="progress"></div>
+    </div>
+    <button class="button" id="resetButton">Reset Game</button>
+
+    <div class="upgrades">
+        <button class="button" id="upgradeButton" data-cost="50" title="Upgrade your duck to increase points per click.">Upgrade Duck (Cost: 50)</button>
+        <button class="button" id="bonusPointsButton" data-cost="500" title="Get a bonus of 1000 points.">Bonus Points (Cost: 500)</button>
+        <button class="button" id="extraClickSpeedButton" data-cost="1000" title="Increase click speed for faster points.">Extra Click Speed (Cost: 1000)</button>
+    </div>
+
+    <div class="auto-clickers">
+        <button class="button" id="buyAutoClicker" data-cost="150" title="Automatically earn points every second.">Buy Auto-Clicker (Cost: 150)</button>
+        <button class="button" id="buyFastAutoClicker" data-cost="500" title="Faster auto-clicker to earn points faster.">Buy Fast Auto-Clicker (Cost: 500)</button>
+    </div>
+
+    <div class="shop">
+        <button class="button" id="buyDuckFarm" data-cost="500" title="Generates points automatically over time.">Buy Duck Farm (Cost: 500)</button>
+    </div>
+
+    <div class="prestige">
+        <button class="button" id="prestigeButton" data-cost="2000" title="Prestige to reset the game and gain permanent multipliers.">Prestige (Cost: 2000)</button>
+    </div>
+
+    <div class="achievement" id="achievement"></div>
+    <div class="event" id="event"></div>
+    <div class="daily-reward" id="dailyReward">Log in every day for rewards!</div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <!-- In-Game Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <h2>Settings</h2>
+            <label>
+                <input type="checkbox" id="toggleSound"> Enable Sound Effects
+            </label>
+            <label>
+                <input type="checkbox" id="toggleNotifications" checked> Show Notifications
+            </label>
+            <label>
+                Game Speed: 
+                <input type="range" id="gameSpeed" min="1" max="3" step="0.1" value="1"> Normal Speed
+            </label>
+            <button class="button" id="closeSettings">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let level = 1;
+        let pointsPerClick = 1;
+        let clickSpeedMultiplier = 1;
+        let autoClickerEnabled = false;
+        let fastAutoClickerEnabled = false;
+        let autoClickerInterval;
+        let fastAutoClickerInterval;
+        let duckFarmEnabled = false;
+        let prestigeMultiplier = 1;
+        let pointsPerSecond = 0;
+        let progressMax = 1000;
+        let soundEnabled = true;
+        let notificationsEnabled = true;
+        let gameSpeed = 1;
+
+        // Golden Duckies
+        let goldenDuckChance = 0.1; // 10% chance for golden duck
+        let goldenDuckActive = false;
+
+        // Elements
+        const duck = document.getElementById('duck');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const progressElement = document.getElementById('progress');
+        const resetButton = document.getElementById('resetButton');
+        const upgradeButton = document.getElementById('upgradeButton');
+        const bonusPointsButton = document.getElementById('bonusPointsButton');
+        const extraClickSpeedButton = document.getElementById('extraClickSpeedButton');
+        const buyAutoClickerButton = document.getElementById('buyAutoClicker');
+        const buyFastAutoClickerButton = document.getElementById('buyFastAutoClicker');
+        const buyDuckFarmButton = document.getElementById('buyDuckFarm');
+        const prestigeButton = document.getElementById('prestigeButton');
+        const achievementElement = document.getElementById('achievement');
+        const tooltip = document.getElementById('tooltip');
+        const notification = document.getElementById('notification');
+        const eventElement = document.getElementById('event');
+        const dailyReward = document.getElementById('dailyReward');
+        const settingsModal = document.getElementById('settingsModal');
+        const toggleSound = document.getElementById('toggleSound');
+        const toggleNotifications = document.getElementById('toggleNotifications');
+        const gameSpeedControl = document.getElementById('gameSpeed');
+        const closeSettingsButton = document.getElementById('closeSettings');
+
+        // Event Listeners for Buttons
+        resetButton.addEventListener('click', resetGame);
+        upgradeButton.addEventListener('click', upgradeDuck);
+        bonusPointsButton.addEventListener('click', activateBonusPoints);
+        extraClickSpeedButton.addEventListener('click', activateExtraClickSpeed);
+        buyAutoClickerButton.addEventListener('click', buyAutoClicker);
+        buyFastAutoClickerButton.addEventListener('click', buyFastAutoClicker);
+        buyDuckFarmButton.addEventListener('click', buyDuckFarm);
+        prestigeButton.addEventListener('click', prestige);
+        duck.addEventListener('click', duckClick); // Added event listener for duck click
+
+        // Functions for Button Actions
+        function resetGame() {
+            if (confirm("Are you sure you want to reset the game?")) {
+                score = 0;
+                pointsPerClick = 1;
+                pointsPerSecond = 0;
+                prestigeMultiplier = 1;
+                clickSpeedMultiplier = 1;
+                autoClickerEnabled = false;
+                fastAutoClickerEnabled = false;
+                duckFarmEnabled = false;
+                level = 1; // Reset level
+                clearInterval(autoClickerInterval);
+                clearInterval(fastAutoClickerInterval);
+                updateProgress();
+                scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                levelElement.textContent = level; // Update level display
+                saveGame();
+            }
+        }
+
+        function upgradeDuck() {
+            if (score >= 50) {
+                score -= 50;
+                pointsPerClick *= 1.1; // Increase by 10% instead of doubling
+                scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                showNotification('Upgrade Successful! Points increased by 10%.');
+                saveGame();
+            } else {
+                alert('Not enough points for upgrade!');
+            }
+        }
+
+        function activateBonusPoints() {
+            if (score >= 500) {
+                score += 1000; 
+                scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                showNotification('Bonus Points Earned!');
+                saveGame();
+            } else {
+                alert('Not enough points for Bonus Points!');
+            }
+        }
+
+        function activateExtraClickSpeed() {
+            if (score >= 1000) {
+                score -= 1000;
+                clickSpeedMultiplier *= 1.5;
+                scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                showNotification('Extra Click Speed Activated!');
+                saveGame();
+            } else {
+                alert('Not enough points for Extra Click Speed!');
+            }
+        }
+
+        function buyAutoClicker() {
+            if (score >= 150) { 
+                score -= 150;
+                autoClickerEnabled = true;
+                startAutoClicker();
+                scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                buyAutoClickerButton.disabled = true;
+                showNotification('Auto-clicker Purchased!');
+                saveGame();
+            } else {
+                alert('Not enough points for Auto-Clicker!');
+            }
+        }
+
+        function buyFastAutoClicker() {
+            if (score >= 500) {
+                score -= 500;
+                fastAutoClickerEnabled = true;
+                startFastAutoClicker();
+                scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                buyFastAutoClickerButton.disabled = true;
+                showNotification('Fast Auto-clicker Purchased!');
+                saveGame();
+            } else {
+                alert('Not enough points for Fast Auto-Clicker!');
+            }
+        }
+
+        function buyDuckFarm() {
+            if (score >= 500) {
+                score -= 500;
+                duckFarmEnabled = true;
+                scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                buyDuckFarmButton.disabled = true;
+                startDuckFarm();
+                showNotification('Duck Farm Purchased!');
+                saveGame();
+            } else {
+                alert('Not enough points for Duck Farm!');
+            }
+        }
+
+        function prestige() {
+            if (score >= 2000) { 
+                if (confirm("Are you sure you want to Prestige? This will reset your game, but increase your multiplier permanently!")) {
+                    score -= 2000;
+                    prestigeMultiplier += 0.1;
+                    scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+                    showNotification('Prestige Complete!');
+                    saveGame();
+                }
+            } else {
+                alert('Not enough points for Prestige!');
+            }
+        }
+
+        function duckClick(event) {
+            score += pointsPerClick * clickSpeedMultiplier * prestigeMultiplier * gameSpeed;
+            scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+            updateProgress();
+
+            // Golden Duck logic - random appearance
+            if (!goldenDuckActive && Math.random() < goldenDuckChance) {
+                goldenDuckActive = true;
+                showNotification("Golden Duck Found! Bonus Points Activated!");
+                score += 1000; // Golden Duck bonus
+                scoreElement.textContent = score.toFixed(2);
+                setTimeout(() => goldenDuckActive = false, 5000); // Golden duck lasts 5 seconds
+            }
+
+            // Level Up Logic
+            const nextLevelPoints = Math.pow(level, 2) * 100;
+            if (score >= nextLevelPoints) {
+                level += 1;
+                levelElement.textContent = level;
+                showNotification(`Level Up! You are now level ${level}`);
+                pointsPerClick += 2; // Increase points per click as you level up
+
+                // Milestone rewards
+                if (level === 10) {
+                    showNotification("Milestone Achieved: Level 10!");
+                    pointsPerClick += 5; // Extra points at level 10
+                }
+                if (level === 25) {
+                    showNotification("Milestone Achieved: Level 25!");
+                    clickSpeedMultiplier += 0.5; // Boost click speed at level 25
+                }
+            }
+
+            // Update progress bar
+            const progress = Math.min(score / nextLevelPoints * 100, 100);
+            progressElement.style.width = `${progress}%`;
+
+            // Add the small duck image
+            const smallDuck = document.createElement('img');
+            smallDuck.src = 'https://media1.tenor.com/m/WO5R4deXQUwAAAAd/cutie-pie.gif';
+            smallDuck.alt = 'Small Duck';
+            smallDuck.classList.add('small-duck');
+            smallDuck.style.left = `${event.clientX - 25}px`; 
+            smallDuck.style.top = `${event.clientY - 25}px`;
+            document.body.appendChild(smallDuck);
+
+            // Remove the small duck after animation
+            setTimeout(() => smallDuck.remove(), 2000);
+
+            if (soundEnabled) {
+                // Optional sound
+                console.log("Click sound played!");
+            }
+        }
+
+        // Helper Functions
+        function updateProgress() {
+            const nextLevelPoints = Math.pow(level, 2) * 100;
+            const progress = Math.min(score / nextLevelPoints * 100, 100);
+            progressElement.style.width = progress + '%';
+        }
+
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.classList.add('visible');
+            setTimeout(function() {
+                notification.classList.remove('visible');
+            }, 2000); 
+        }
+
+        function startAutoClicker() {
+            if (!autoClickerInterval) {
+                autoClickerInterval = setInterval(() => {
+                    score += pointsPerClick;
+                    scoreElement.textContent = score.toFixed(2);
+                    updateProgress();
+                }, 1000);
+            }
+        }
+
+        function startFastAutoClicker() {
+            if (!fastAutoClickerInterval) {
+                fastAutoClickerInterval = setInterval(() => {
+                    score += pointsPerClick * 2; // Faster auto-click
+                    scoreElement.textContent = score.toFixed(2);
+                    updateProgress();
+                }, 500);
+            }
+        }
+
+        function saveGame() {
+            localStorage.setItem('score', score);
+            localStorage.setItem('pointsPerClick', pointsPerClick);
+            localStorage.setItem('clickSpeedMultiplier', clickSpeedMultiplier);
+            localStorage.setItem('prestigeMultiplier', prestigeMultiplier);
+            localStorage.setItem('autoClickerEnabled', autoClickerEnabled);
+            localStorage.setItem('fastAutoClickerEnabled', fastAutoClickerEnabled);
+            localStorage.setItem('duckFarmEnabled', duckFarmEnabled);
+            localStorage.setItem('level', level);
+            localStorage.setItem('soundEnabled', soundEnabled);
+            localStorage.setItem('notificationsEnabled', notificationsEnabled);
+            localStorage.setItem('gameSpeed', gameSpeed);
+        }
+
+        function loadGame() {
+            const savedScore = localStorage.getItem('score');
+            const savedPointsPerClick = localStorage.getItem('pointsPerClick');
+            const savedClickSpeedMultiplier = localStorage.getItem('clickSpeedMultiplier');
+            const savedPrestigeMultiplier = localStorage.getItem('prestigeMultiplier');
+            const savedAutoClickerEnabled = localStorage.getItem('autoClickerEnabled');
+            const savedFastAutoClickerEnabled = localStorage.getItem('fastAutoClickerEnabled');
+            const savedDuckFarmEnabled = localStorage.getItem('duckFarmEnabled');
+            const savedLevel = localStorage.getItem('level');
+            const savedSoundEnabled = localStorage.getItem('soundEnabled');
+            const savedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
+            const savedGameSpeed = localStorage.getItem('gameSpeed');
+
+            if (savedScore) score = parseInt(savedScore);
+            if (savedPointsPerClick) pointsPerClick = parseInt(savedPointsPerClick);
+            if (savedClickSpeedMultiplier) clickSpeedMultiplier = parseFloat(savedClickSpeedMultiplier);
+            if (savedPrestigeMultiplier) prestigeMultiplier = parseFloat(savedPrestigeMultiplier);
+            if (savedAutoClickerEnabled) autoClickerEnabled = savedAutoClickerEnabled === 'true';
+            if (savedFastAutoClickerEnabled) fastAutoClickerEnabled = savedFastAutoClickerEnabled === 'true';
+            if (savedDuckFarmEnabled) duckFarmEnabled = savedDuckFarmEnabled === 'true';
+            if (savedLevel) level = parseInt(savedLevel);
+            if (savedSoundEnabled) soundEnabled = savedSoundEnabled === 'true';
+            if (savedNotificationsEnabled) notificationsEnabled = savedNotificationsEnabled === 'true';
+            if (savedGameSpeed) gameSpeed = parseFloat(savedGameSpeed);
+
+            scoreElement.textContent = score.toFixed(2); // Round to 2 decimals
+            levelElement.textContent = level;
+            updateProgress();
+        }
+
+        // Initialize Game
+        loadGame();
+    </script>
+
+</body>
+</html>
